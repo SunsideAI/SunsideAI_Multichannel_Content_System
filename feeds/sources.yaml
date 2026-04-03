@@ -1,0 +1,115 @@
+# Sunside AI Content Autopilot — Feed Sources
+# Kategorien: immobilien, ki_tech, studien, proptech
+
+feeds:
+  # === IMMOBILIENBRANCHE ===
+  - name: "Immobilienzeitung"
+    url: "https://www.iz.de/rss/feed.xml"
+    type: rss
+    category: immobilien
+    priority: high
+
+  - name: "Haufe Immobilien"
+    url: "https://www.haufe.de/immobilien/rss_218.xml"
+    type: rss
+    category: immobilien
+    priority: high
+
+  - name: "ImmoCompact"
+    url: "https://www.immocompact.de/rss"
+    type: rss
+    category: immobilien
+    priority: medium
+
+  - name: "IVD Pressemitteilungen"
+    url: "https://www.ivd.net/presse"
+    type: scrape
+    category: immobilien
+    priority: high
+    scrape_selector: "article.press-release, .news-item"
+
+  - name: "Gewerbe Quadrat"
+    url: "https://www.gewerbe-quadrat.de/feed/"
+    type: rss
+    category: immobilien
+    priority: low
+
+  # === KI & TECH ===
+  - name: "t3n"
+    url: "https://t3n.de/rss.xml"
+    type: rss
+    category: ki_tech
+    priority: medium
+
+  - name: "Heise Online"
+    url: "https://www.heise.de/rss/heise-atom.xml"
+    type: rss
+    category: ki_tech
+    priority: medium
+
+  - name: "The Decoder (KI-News DE)"
+    url: "https://the-decoder.de/feed/"
+    type: rss
+    category: ki_tech
+    priority: high
+
+  - name: "Golem"
+    url: "https://rss.golem.de/rss.php?feed=ATOM2.0"
+    type: rss
+    category: ki_tech
+    priority: low
+
+  - name: "KI Bundesverband"
+    url: "https://ki-verband.de/feed/"
+    type: rss
+    category: ki_tech
+    priority: medium
+
+  # === STUDIEN & REPORTS ===
+  - name: "Bitkom Presse"
+    url: "https://www.bitkom.org/Presse"
+    type: scrape
+    category: studien
+    priority: high
+    scrape_selector: ".press-release-item, article.teaser"
+
+  - name: "Semantic Scholar"
+    url: "https://api.semanticscholar.org/graph/v1/paper/search"
+    type: scholar
+    category: studien
+    priority: high
+
+  - name: "Statista Immobilien (Presse)"
+    url: "https://de.statista.com/presse/"
+    type: scrape
+    category: studien
+    priority: medium
+    scrape_selector: "article, .press-item"
+
+  # === PROPTECH ===
+  - name: "PropTech DE"
+    url: "https://proptech.de/feed/"
+    type: rss
+    category: proptech
+    priority: high
+
+  - name: "Immobilien Manager"
+    url: "https://www.immobilienmanager.de/feed/"
+    type: rss
+    category: immobilien
+    priority: medium
+
+  # === GOOGLE ALERTS (Atom Feeds) ===
+  # Erstelle Google Alerts für diese Keywords und füge die Atom Feed URLs hier ein:
+  # - "KI Immobilienmakler"
+  # - "PropTech Deutschland 2026"  
+  # - "Digitalisierung Immobilienbranche"
+  # - "Chatbot Immobilien"
+  # - "Künstliche Intelligenz Immobilien Studie"
+  #
+  # Format:
+  # - name: "Google Alert: KI Immobilienmakler"
+  #   url: "https://www.google.com/alerts/feeds/xxxxx"
+  #   type: rss
+  #   category: immobilien
+  #   priority: high

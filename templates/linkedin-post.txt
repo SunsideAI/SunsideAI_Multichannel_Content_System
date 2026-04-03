@@ -1,0 +1,14 @@
+{{hook_line_1}}
+{{hook_line_2}}
+
+{{story_problem}}
+
+{{story_solution}}
+
+{{key_insight}}
+
+{{cta}}
+
+{{blog_url}}
+
+{{hashtags}}

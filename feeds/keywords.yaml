@@ -1,0 +1,39 @@
+# Keywords für Semantic Scholar API und Google Alerts
+
+scholar_keywords:
+  - "real estate artificial intelligence"
+  - "PropTech adoption Germany"
+  - "chatbot customer service real estate"
+  - "AI property valuation"
+  - "real estate digital transformation"
+  - "machine learning housing market"
+  - "virtual property tour technology"
+  - "CRM automation real estate"
+
+# Für Relevanzfilterung: Artikel müssen mindestens 
+# eines dieser deutschen Keywords im Titel/Abstract enthalten
+relevance_keywords_de:
+  - "Immobilienmakler"
+  - "Immobilien"
+  - "Makler"
+  - "PropTech"
+  - "Wohnungsmarkt"
+  - "Immobilienwirtschaft"
+  - "Chatbot"
+  - "KI"
+  - "Künstliche Intelligenz"
+  - "Automatisierung"
+  - "Digitalisierung"
+  - "SEO"
+  - "Lead-Generierung"
+  - "CRM"
+  - "Bewertung"
+  - "Exposé"
+  - "Besichtigung"
+
+# Themen die NICHT behandelt werden sollen (Blacklist)
+topic_blacklist:
+  - "Kryptowährung"
+  - "NFT"
+  - "Metaverse"
+  - "Gewerbeimmobilien Großprojekte"  # Nicht unsere Zielgruppe
