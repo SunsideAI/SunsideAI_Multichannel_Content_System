@@ -16,7 +16,7 @@ from core.config import (
     get_icon_for_category, load_knowledge, is_prompt_placeholder,
     load_prompt, SITE_URL, CLAUDE_TEMP_CREATIVE,
 )
-from core.notifier import send_blog_for_review, send_qa_failure
+from core.notifier import send_qa_failure
 
 logger = logging.getLogger(__name__)
 
@@ -236,13 +236,8 @@ ORIGINALER BEITRAG:
     if finding.get("opportunity_id"):
         db.complete_opportunity(finding["opportunity_id"])
 
-    # Notifications — send blog review email or QA failure
-    if qa_passed:
-        send_blog_for_review(
-            title=title, qa_score=qa_score, target_keyword=target_keyword,
-            content=blog_content, slug=slug, category=category,
-        )
-    else:
+    # Notifications — only send email on QA failure (batch email handles review)
+    if not qa_passed:
         qa_result_with_note = dict(qa_result)
         if retry_count > 0:
             qa_result_with_note.setdefault("suggestions", []).insert(
