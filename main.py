@@ -54,7 +54,7 @@ def run_agent(agent_name: str) -> None:
         elif agent_name == "blog":
             from agents.blog_writer import run
         elif agent_name == "publish":
-            from agents.blog_writer import run_publish
+            from agents.blog_writer import run_publish as run
         elif agent_name == "linkedin":
             from agents.linkedin_poster import run
         else:

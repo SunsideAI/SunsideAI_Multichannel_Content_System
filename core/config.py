@@ -93,6 +93,15 @@ def load_prompt(name: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def is_prompt_placeholder(name: str) -> bool:
+    """Check if a prompt file is still a placeholder (< 50 chars of content)."""
+    try:
+        content = load_prompt(name)
+        return len(content.strip()) < 50
+    except FileNotFoundError:
+        return True
+
+
 def load_knowledge(name: str) -> str:
     """Load a knowledge base file."""
     path = KNOWLEDGE_DIR / name
