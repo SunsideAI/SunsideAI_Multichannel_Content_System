@@ -16,14 +16,16 @@ def send_email(
     subject: str,
     html_body: str,
     to: Optional[str] = None,
+    attachments: Optional[list] = None,
 ) -> bool:
     """
-    Send an email via Resend.
+    Send an email via Resend, optionally with attachments.
 
     Args:
         subject: Email subject line
         html_body: HTML content
         to: Recipient (defaults to NOTIFICATION_EMAIL)
+        attachments: List of dicts with filename, content (base64), type
 
     Returns:
         True if sent successfully
@@ -35,12 +37,16 @@ def send_email(
         return False
 
     try:
-        resp = resend.Emails.send({
+        params = {
             "from": RESEND_FROM_EMAIL,
             "to": [recipient],
             "subject": subject,
             "html": html_body,
-        })
+        }
+        if attachments:
+            params["attachments"] = attachments
+
+        resp = resend.Emails.send(params)
         logger.info(f"Email sent: '{subject}' → {recipient} (id: {resp.get('id', '?')})")
         return True
     except Exception as e:

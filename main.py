@@ -135,9 +135,9 @@ def run_weekly_blog_batch() -> None:
             logger.error(f"Blog batch post {i+1} failed: {e}")
 
     if created_posts:
-        from core.notifier import send_weekly_batch_summary
-        send_weekly_batch_summary(created_posts)
-        logger.info(f"Batch complete: {len(created_posts)} posts created, summary sent")
+        from core.notifier import send_weekly_blog_batch
+        send_weekly_blog_batch(created_posts)
+        logger.info(f"Batch complete: {len(created_posts)} posts created, batch email sent")
     else:
         logger.info("No posts created in batch")
 
