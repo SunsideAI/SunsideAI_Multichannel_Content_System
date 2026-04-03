@@ -10,10 +10,13 @@ import re
 from datetime import datetime, timedelta
 
 from core import supabase_client as db
-from core.claude_client import generate_blog_post, evaluate_quality
+from core.claude_client import generate_blog_post, evaluate_quality, call_claude
 from core.github_client import commit_blog_post
-from core.config import get_icon_for_category, load_knowledge, is_prompt_placeholder, SITE_URL
-from core.notifier import send_morning_digest, send_qa_failure, send_publish_success
+from core.config import (
+    get_icon_for_category, load_knowledge, is_prompt_placeholder,
+    load_prompt, SITE_URL, CLAUDE_TEMP_CREATIVE,
+)
+from core.notifier import send_blog_for_review, send_qa_failure
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +121,16 @@ def run() -> dict:
         "related_content": related_content or "Kein ähnlicher Content vorhanden",
     }
 
+    # Optional: refresh GSC data on demand before writing
+    from core.config import GSC_REFRESH_ON_DEMAND
+    if GSC_REFRESH_ON_DEMAND:
+        try:
+            from core.gsc_client import fetch_page_performance
+            fetch_page_performance(url_filter="/blog/", days=7)
+            logger.info("Refreshed GSC data on demand before blog creation")
+        except Exception as e:
+            logger.warning(f"On-demand GSC refresh failed (non-fatal): {e}")
+
     # Generate blog post
     blog_content = generate_blog_post(finding, context)
     frontmatter = extract_frontmatter(blog_content)
@@ -130,10 +143,64 @@ def run() -> dict:
     # Select blog image
     image_filename = f"{get_icon_for_category(category)}.png"
 
-    # Quality Gate
+    # Quality Gate — with auto-retry
     qa_result = evaluate_quality(blog_content, target_keyword)
     qa_score = qa_result.get("score", 0)
-    qa_passed = qa_result.get("passed", False) and qa_score >= db.get_qa_threshold()
+    original_qa_score = qa_score
+    qa_threshold = db.get_qa_threshold()
+    qa_passed = qa_result.get("passed", False) and qa_score >= qa_threshold
+    retry_count = 0
+
+    if not qa_passed:
+        logger.info(f"QA failed ({qa_score}/10), attempting auto-retry...")
+        retry_count = 1
+
+        # Build revision prompt from QA feedback
+        suggestions = qa_result.get("suggestions", [])
+        feedback = qa_result.get("feedback", {})
+        feedback_lines = []
+        for criterion, details in feedback.items():
+            if isinstance(details, dict):
+                feedback_lines.append(f"- {criterion}: {details.get('score', '?')}/2 — {details.get('notes', '')}")
+
+        revision_prompt = f"""Der folgende Blogbeitrag hat die Qualitätsprüfung nicht bestanden (Score: {qa_score}/10).
+
+FEEDBACK:
+{chr(10).join(feedback_lines)}
+
+VERBESSERUNGSVORSCHLÄGE:
+{chr(10).join(f'- {s}' for s in suggestions)}
+
+Bitte überarbeite den Beitrag und behebe die genannten Punkte.
+Behalte Struktur, Keyword-Fokus und Länge bei.
+
+ORIGINALER BEITRAG:
+{blog_content}"""
+
+        try:
+            system_prompt = load_prompt("seo-blog-writer")
+            blog_content = call_claude(
+                revision_prompt,
+                system_prompt=system_prompt,
+                temperature=CLAUDE_TEMP_CREATIVE,
+            )
+            frontmatter = extract_frontmatter(blog_content)
+            slug = frontmatter.get("slug", slug)
+            title = frontmatter.get("title", title)
+            category = frontmatter.get("category", category)
+            meta_desc = frontmatter.get("description", meta_desc)
+
+            # Re-evaluate revised post
+            qa_result = evaluate_quality(blog_content, target_keyword)
+            qa_score = qa_result.get("score", 0)
+            qa_passed = qa_result.get("passed", False) and qa_score >= qa_threshold
+
+            if qa_passed:
+                logger.info(f"Auto-retry succeeded: {original_qa_score} → {qa_score}")
+            else:
+                logger.warning(f"Auto-retry also failed: {qa_score}/10")
+        except Exception as e:
+            logger.error(f"Auto-retry generation failed: {e}")
 
     status = "QA_PASSED" if qa_passed else "QA_FAILED"
     scheduled_at = None
@@ -156,6 +223,8 @@ def run() -> dict:
         "internal_links_used": [p["url"] for _, p in zip(range(5), pages)],
         "qa_score": qa_score,
         "qa_feedback": qa_result.get("feedback", {}),
+        "retry_count": retry_count,
+        "original_qa_score": original_qa_score if retry_count > 0 else None,
         "status": status,
         "scheduled_at": scheduled_at,
     }
@@ -167,15 +236,25 @@ def run() -> dict:
     if finding.get("opportunity_id"):
         db.complete_opportunity(finding["opportunity_id"])
 
-    # Notifications
+    # Notifications — send blog review email or QA failure
     if qa_passed:
-        publish_time = (datetime.utcnow() + timedelta(hours=2)).strftime("%H:%M")
-        send_morning_digest(title, qa_score, target_keyword, publish_time)
+        send_blog_for_review(
+            title=title, qa_score=qa_score, target_keyword=target_keyword,
+            content=blog_content, slug=slug, category=category,
+        )
     else:
-        send_qa_failure(title, qa_score, qa_result)
+        qa_result_with_note = dict(qa_result)
+        if retry_count > 0:
+            qa_result_with_note.setdefault("suggestions", []).insert(
+                0, f"Auto-Retry fehlgeschlagen (Original: {original_qa_score}, Retry: {qa_score}). Manueller Review nötig."
+            )
+        send_qa_failure(title, qa_score, qa_result_with_note)
 
-    logger.info(f"Blog post created: '{title}' — QA: {qa_score}/10 ({status})")
-    return {"processed": 1, "created": 1, "qa_score": qa_score, "status": status}
+    logger.info(f"Blog post created: '{title}' — QA: {qa_score}/10 ({status}, retries: {retry_count})")
+    return {
+        "processed": 1, "created": 1, "qa_score": qa_score, "status": status,
+        "retry_count": retry_count, "original_qa_score": original_qa_score,
+    }
 
 
 def run_publish() -> dict:
@@ -197,7 +276,6 @@ def run_publish() -> dict:
                 "blog_url": blog_url,
             })
 
-            send_publish_success(post["title"], blog_url)
             published += 1
             logger.info(f"Published: {post['title']}")
 

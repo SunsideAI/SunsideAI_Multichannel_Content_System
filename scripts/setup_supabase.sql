@@ -73,11 +73,27 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   target_keyword TEXT, related_keywords JSONB DEFAULT '[]',
   internal_links_used JSONB DEFAULT '[]', sources_used JSONB DEFAULT '[]',
   word_count INT DEFAULT 0,
-  qa_score FLOAT, qa_feedback JSONB,
+  qa_score FLOAT, qa_feedback JSONB, retry_count INT DEFAULT 0, original_qa_score FLOAT,
   scheduled_at TIMESTAMPTZ, published_at TIMESTAMPTZ,
   github_commit_sha TEXT, blog_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- 5b. Post Performance (weekly GSC snapshots per blog post)
+CREATE TABLE IF NOT EXISTS post_performance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  blog_post_id UUID REFERENCES blog_posts(id) ON DELETE CASCADE,
+  measured_at DATE DEFAULT CURRENT_DATE,
+  impressions INT DEFAULT 0,
+  clicks INT DEFAULT 0,
+  ctr FLOAT DEFAULT 0,
+  avg_position FLOAT,
+  top_keywords JSONB DEFAULT '[]',
+  UNIQUE(blog_post_id, measured_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_performance_post ON post_performance(blog_post_id);
+CREATE INDEX IF NOT EXISTS idx_post_performance_date ON post_performance(measured_at DESC);
 
 -- 6. LinkedIn Posts
 CREATE TABLE IF NOT EXISTS linkedin_posts (

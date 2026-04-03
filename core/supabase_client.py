@@ -181,6 +181,16 @@ def update_blog_post(post_id: str, updates: dict) -> None:
     get_client().table("blog_posts").update(updates).eq("id", post_id).execute()
 
 
+def get_blog_post_by_finding(finding_id: str) -> Optional[dict]:
+    """Get a blog post by its finding_id."""
+    resp = get_client().table("blog_posts") \
+        .select("*") \
+        .eq("finding_id", finding_id) \
+        .limit(1) \
+        .execute()
+    return resp.data[0] if resp.data else None
+
+
 def get_posts_to_publish() -> list:
     """Get posts ready to auto-publish (QA passed, delay expired, not on hold)."""
     now = datetime.utcnow().isoformat()
@@ -244,6 +254,37 @@ def create_linkedin_post(post_data: dict) -> dict:
 
 def update_linkedin_post(post_id: str, updates: dict) -> None:
     get_client().table("linkedin_posts").update(updates).eq("id", post_id).execute()
+
+
+# === Post Performance ===
+
+def upsert_post_performance(records: list[dict]) -> None:
+    """Bulk upsert post performance snapshots."""
+    if records:
+        get_client().table("post_performance").upsert(
+            records, on_conflict="blog_post_id,measured_at"
+        ).execute()
+
+
+def get_performance_summary(days: int = 28) -> list:
+    """Get aggregated performance data per blog post over the given period."""
+    cutoff = (datetime.utcnow() - timedelta(days=days)).date().isoformat()
+    return get_client().table("post_performance") \
+        .select("*, blog_posts(title, slug, category, target_keyword)") \
+        .gte("measured_at", cutoff) \
+        .order("impressions", desc=True) \
+        .execute().data
+
+
+def get_post_performance_trend(blog_post_id: str, weeks: int = 4) -> list:
+    """Get weekly performance snapshots for a single post, oldest first."""
+    cutoff = (datetime.utcnow() - timedelta(weeks=weeks)).date().isoformat()
+    return get_client().table("post_performance") \
+        .select("measured_at, impressions, clicks, ctr, avg_position") \
+        .eq("blog_post_id", blog_post_id) \
+        .gte("measured_at", cutoff) \
+        .order("measured_at", desc=False) \
+        .execute().data
 
 
 # === Agent Runs ===

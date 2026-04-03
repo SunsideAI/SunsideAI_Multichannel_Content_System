@@ -37,9 +37,11 @@ LINKEDIN_PERSON_ID = os.getenv("LINKEDIN_PERSON_ID")
 # Google Search Console
 GSC_SERVICE_ACCOUNT_JSON = os.getenv("GSC_SERVICE_ACCOUNT_JSON", "gsc-credentials.json")
 GSC_SITE_URL = os.getenv("GSC_SITE_URL", "sc-domain:sunsideai.de")
+GSC_REFRESH_ON_DEMAND = os.getenv("GSC_REFRESH_ON_DEMAND", "true").lower() == "true"
 
-# Notifications
-SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+# Notifications (Resend Email)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "autopilot@sunsideai.de")
 NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL", "paul@sunsideai.de")
 
 # Website
@@ -50,6 +52,7 @@ SITEMAP_URL = f"{SITE_URL}/sitemap.xml"
 TIMEZONE = os.getenv("TIMEZONE", "Europe/Berlin")
 
 SCHEDULE = {
+    "performance": {"day": "sunday", "time": "17:00"},
     "crawl":      {"day": "sunday",  "time": "18:00"},
     "keywords":   {"day": "sunday",  "time": "19:00"},
     "strategist": {"day": "sunday",  "time": "19:30"},

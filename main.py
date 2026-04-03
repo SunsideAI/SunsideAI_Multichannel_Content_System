@@ -3,12 +3,14 @@ Sunside AI Content Autopilot — Main Orchestrator
 
 Usage:
     python main.py                  # Run scheduled (daemon mode)
+    python main.py --run performance # Run performance tracker
     python main.py --run crawl      # Run single agent
     python main.py --run research
     python main.py --run strategy
     python main.py --run blog
     python main.py --run publish
     python main.py --run linkedin
+    python main.py --run batch      # Create 5 blog posts + summary email
     python main.py --run all        # Run full pipeline once
 """
 
@@ -43,7 +45,9 @@ def run_agent(agent_name: str) -> None:
     logger.info(f"Starting agent: {agent_name}")
     
     try:
-        if agent_name == "crawl":
+        if agent_name == "performance":
+            from agents.performance_tracker import run
+        elif agent_name == "crawl":
             from agents.content_crawler import run
         elif agent_name == "keywords":
             from agents.keyword_researcher import run
@@ -81,6 +85,7 @@ def run_agent(agent_name: str) -> None:
 def run_sunday_pipeline() -> None:
     """Run the full Sunday pipeline (SEO Intelligence + Research)."""
     logger.info("=== Sunday Pipeline ===")
+    run_agent("performance")
     run_agent("crawl")
     run_agent("keywords")
     run_agent("strategy")
@@ -110,6 +115,35 @@ def run_weekday_pipeline() -> None:
     logger.info("=== Weekday Pipeline Complete ===")
 
 
+def run_weekly_blog_batch() -> None:
+    """Create up to 5 blog posts and send each + summary via email."""
+    logger.info("=== Weekly Blog Batch ===")
+    created_posts = []
+
+    for i in range(5):
+        finding = db.get_next_finding()
+        if not finding:
+            logger.info(f"No more findings after {i} posts")
+            break
+
+        try:
+            run_agent("blog")
+            post = db.get_blog_post_by_finding(finding["id"])
+            if post:
+                created_posts.append(post)
+        except Exception as e:
+            logger.error(f"Blog batch post {i+1} failed: {e}")
+
+    if created_posts:
+        from core.notifier import send_weekly_batch_summary
+        send_weekly_batch_summary(created_posts)
+        logger.info(f"Batch complete: {len(created_posts)} posts created, summary sent")
+    else:
+        logger.info("No posts created in batch")
+
+    logger.info("=== Weekly Blog Batch Complete ===")
+
+
 def run_full_pipeline() -> None:
     """Run everything once (for testing)."""
     run_sunday_pipeline()
@@ -128,6 +162,8 @@ def main():
             run_sunday_pipeline()
         elif args.run == "weekday":
             run_weekday_pipeline()
+        elif args.run == "batch":
+            run_weekly_blog_batch()
         else:
             run_agent(args.run)
     else:
@@ -139,8 +175,8 @@ def main():
             now = datetime.now(tz)
             logger.info(f"Starting scheduler (timezone: {TIMEZONE}, current time: {now.strftime('%H:%M')})")
             
-            # Sunday: Full SEO Intelligence + Research
-            schedule.every().sunday.at("18:00").do(run_sunday_pipeline)
+            # Sunday: Performance tracking at 17:00, then SEO Intelligence + Research at 18:00
+            schedule.every().sunday.at("17:00").do(run_sunday_pipeline)
             
             # Weekdays: Blog + Publish + LinkedIn
             for day in ["monday", "tuesday", "wednesday", "thursday", "friday"]:
