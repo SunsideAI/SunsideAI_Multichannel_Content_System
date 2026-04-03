@@ -49,7 +49,37 @@ def build_strategist_context() -> str:
     for o in open_opps:
         opps_text += f"- {o.get('target_keyword', '')} | {o.get('type', '')} | {o.get('action', '')}\n"
 
-    return f"{inventory_text}\n{keywords_text}\n{recent_text}\n{opps_text}"
+    # Performance data from Performance Tracker
+    perf_summary = db.get_config("performance_summary", None)
+    perf_text = "\nCONTENT PERFORMANCE (last 28 days):\n"
+    if perf_summary and isinstance(perf_summary, dict):
+        # Category performance
+        for cat, stats in perf_summary.get("categories", {}).items():
+            perf_text += (
+                f"- Posts über {cat}: Ø {stats.get('avg_impressions_per_post', 0)} Impressions/Woche, "
+                f"CTR {stats.get('avg_ctr', 0)}% — {stats.get('label', 'N/A')}\n"
+            )
+        # Position trends
+        for trend in perf_summary.get("trends", []):
+            direction = "gestiegen" if trend["direction"] == "UP" else "gefallen"
+            perf_text += (
+                f"- Post '{trend.get('title', '')}' ist von Pos {trend.get('from_position', '?')} "
+                f"auf Pos {trend.get('to_position', '?')} {direction} — "
+                f"Keyword-Cluster weiter {'ausbauen' if trend['direction'] == 'UP' else 'prüfen'}\n"
+            )
+        # Top performers
+        top = perf_summary.get("top_posts", [])[:5]
+        if top:
+            perf_text += "\nTOP 5 POSTS BY IMPRESSIONS:\n"
+            for p in top:
+                perf_text += (
+                    f"- \"{p.get('title', '')}\" | {p.get('impressions', 0)} Imp | "
+                    f"CTR {p.get('ctr', 0)}% | Pos {p.get('avg_position', 'N/A')}\n"
+                )
+    else:
+        perf_text += "- Keine Performance-Daten verfügbar (Performance Tracker noch nicht gelaufen)\n"
+
+    return f"{inventory_text}\n{keywords_text}\n{recent_text}\n{opps_text}\n{perf_text}"
 
 
 def run() -> dict:

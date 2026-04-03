@@ -3,6 +3,7 @@ Sunside AI Content Autopilot — Main Orchestrator
 
 Usage:
     python main.py                  # Run scheduled (daemon mode)
+    python main.py --run performance # Run performance tracker
     python main.py --run crawl      # Run single agent
     python main.py --run research
     python main.py --run strategy
@@ -43,7 +44,9 @@ def run_agent(agent_name: str) -> None:
     logger.info(f"Starting agent: {agent_name}")
     
     try:
-        if agent_name == "crawl":
+        if agent_name == "performance":
+            from agents.performance_tracker import run
+        elif agent_name == "crawl":
             from agents.content_crawler import run
         elif agent_name == "keywords":
             from agents.keyword_researcher import run
@@ -81,6 +84,7 @@ def run_agent(agent_name: str) -> None:
 def run_sunday_pipeline() -> None:
     """Run the full Sunday pipeline (SEO Intelligence + Research)."""
     logger.info("=== Sunday Pipeline ===")
+    run_agent("performance")
     run_agent("crawl")
     run_agent("keywords")
     run_agent("strategy")
@@ -139,8 +143,8 @@ def main():
             now = datetime.now(tz)
             logger.info(f"Starting scheduler (timezone: {TIMEZONE}, current time: {now.strftime('%H:%M')})")
             
-            # Sunday: Full SEO Intelligence + Research
-            schedule.every().sunday.at("18:00").do(run_sunday_pipeline)
+            # Sunday: Performance tracking at 17:00, then SEO Intelligence + Research at 18:00
+            schedule.every().sunday.at("17:00").do(run_sunday_pipeline)
             
             # Weekdays: Blog + Publish + LinkedIn
             for day in ["monday", "tuesday", "wednesday", "thursday", "friday"]:
