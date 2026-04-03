@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from core import supabase_client as db
 from core.claude_client import generate_blog_post, evaluate_quality
 from core.github_client import commit_blog_post
-from core.config import get_icon_for_category, load_knowledge, SITE_URL
+from core.config import get_icon_for_category, load_knowledge, is_prompt_placeholder, SITE_URL
 from core.notifier import send_morning_digest, send_qa_failure, send_publish_success
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,10 @@ def extract_frontmatter(content: str) -> dict:
 def run() -> dict:
     """Run the blog writer agent — create a new blog post."""
     logger.info("Blog Writer starting...")
+
+    if is_prompt_placeholder("seo-blog-writer"):
+        logger.warning("Prompt file 'seo-blog-writer' is a placeholder, skipping agent")
+        return {"processed": 0, "created": 0, "skipped": "placeholder_prompt"}
 
     # Get next finding
     finding = db.get_next_finding()

@@ -12,7 +12,7 @@ from typing import Optional
 from core import supabase_client as db
 from core.claude_client import generate_linkedin_text
 from core.linkedin_client import upload_image, create_post
-from core.config import SITE_URL
+from core.config import SITE_URL, is_prompt_placeholder
 from core.notifier import send_linkedin_success, send_error
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,10 @@ def extract_stats(content: str) -> str:
 def run() -> dict:
     """Run the LinkedIn poster agent."""
     logger.info("LinkedIn Poster starting...")
+
+    if is_prompt_placeholder("linkedin-creator"):
+        logger.warning("Prompt file 'linkedin-creator' is a placeholder, skipping agent")
+        return {"processed": 0, "created": 0, "skipped": "placeholder_prompt"}
 
     # Check if auto-posting is enabled
     auto_post = db.get_config("linkedin_auto_post", True)
