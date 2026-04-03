@@ -1020,15 +1020,42 @@ LINKEDIN_PERSON_ID=...
 GSC_SERVICE_ACCOUNT_JSON=gsc-credentials.json
 GSC_SITE_URL=sc-domain:sunsideai.de
 
-# Notifications
-SLACK_WEBHOOK_URL=https://hooks.slack.com/...
-# oder
-BREVO_API_KEY=...
+# Notifications (Resend Email)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=autopilot@sunsideai.de
 NOTIFICATION_EMAIL=paul@sunsideai.de
 
 # Config
 TIMEZONE=Europe/Berlin
 ```
+
+---
+
+## E-Mail Notifications (Resend)
+
+Die Pipeline nutzt **Resend** (resend.com) für alle Benachrichtigungen per E-Mail.
+
+### Setup-Schritte:
+
+1. **Resend Account erstellen** auf [resend.com](https://resend.com)
+2. **Domain verifizieren:** sunsideai.de in Resend → Domains hinzufügen und die DNS Records (SPF, DKIM, DMARC) beim Hoster setzen
+3. **API Key generieren:** Settings → API Keys → neuen Key erstellen
+4. **Sender-Adresse festlegen:** `autopilot@sunsideai.de` (oder `noreply@sunsideai.de`)
+5. **Env Vars setzen** (Railway / .env):
+   - `RESEND_API_KEY=re_xxxxx`
+   - `RESEND_FROM_EMAIL=autopilot@sunsideai.de`
+   - `NOTIFICATION_EMAIL=paul@sunsideai.de`
+
+### E-Mails die gesendet werden:
+
+| Trigger | Betreff | Inhalt |
+|---|---|---|
+| Blog erstellt | 📝 Neuer Blog-Post: {title} | Vollständiger Post als HTML-Preview + QA-Score, Keyword, Kategorie |
+| Batch fertig | 📊 Wochenübersicht: 5 Blog-Posts fertig | Tabelle aller Posts mit QA-Scores |
+| QA Failed | ⚠️ QA Failed: {title} | Feedback + Suggestions |
+| LinkedIn gepostet | ✅ LinkedIn: {title} | Bestätigung |
+| Agent Error | 🔴 Agent Error: {name} | Error-Message |
+| Research fertig | 🔬 Research: X Findings | Findings + Opportunities Count |
 
 ---
 

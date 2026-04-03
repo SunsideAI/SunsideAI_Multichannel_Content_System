@@ -39,8 +39,9 @@ GSC_SERVICE_ACCOUNT_JSON = os.getenv("GSC_SERVICE_ACCOUNT_JSON", "gsc-credential
 GSC_SITE_URL = os.getenv("GSC_SITE_URL", "sc-domain:sunsideai.de")
 GSC_REFRESH_ON_DEMAND = os.getenv("GSC_REFRESH_ON_DEMAND", "true").lower() == "true"
 
-# Notifications
-SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+# Notifications (Resend Email)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "autopilot@sunsideai.de")
 NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL", "paul@sunsideai.de")
 
 # Website

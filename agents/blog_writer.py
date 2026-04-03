@@ -16,7 +16,7 @@ from core.config import (
     get_icon_for_category, load_knowledge, is_prompt_placeholder,
     load_prompt, SITE_URL, CLAUDE_TEMP_CREATIVE,
 )
-from core.notifier import send_morning_digest, send_qa_failure, send_publish_success
+from core.notifier import send_blog_for_review, send_qa_failure
 
 logger = logging.getLogger(__name__)
 
@@ -236,18 +236,13 @@ ORIGINALER BEITRAG:
     if finding.get("opportunity_id"):
         db.complete_opportunity(finding["opportunity_id"])
 
-    # Notifications
+    # Notifications — send blog review email or QA failure
     if qa_passed:
-        publish_time = (datetime.utcnow() + timedelta(hours=2)).strftime("%H:%M")
-        if retry_count > 0:
-            from core.notifier import send_slack
-            send_slack(
-                f"🔄 *Auto-Retry erfolgreich:* {title}\n"
-                f"Score verbessert: {original_qa_score} → {qa_score}"
-            )
-        send_morning_digest(title, qa_score, target_keyword, publish_time)
+        send_blog_for_review(
+            title=title, qa_score=qa_score, target_keyword=target_keyword,
+            content=blog_content, slug=slug, category=category,
+        )
     else:
-        retry_note = " (Auto-Retry fehlgeschlagen, manueller Review nötig)" if retry_count > 0 else ""
         qa_result_with_note = dict(qa_result)
         if retry_count > 0:
             qa_result_with_note.setdefault("suggestions", []).insert(
@@ -281,7 +276,6 @@ def run_publish() -> dict:
                 "blog_url": blog_url,
             })
 
-            send_publish_success(post["title"], blog_url)
             published += 1
             logger.info(f"Published: {post['title']}")
 

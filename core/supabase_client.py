@@ -181,6 +181,16 @@ def update_blog_post(post_id: str, updates: dict) -> None:
     get_client().table("blog_posts").update(updates).eq("id", post_id).execute()
 
 
+def get_blog_post_by_finding(finding_id: str) -> Optional[dict]:
+    """Get a blog post by its finding_id."""
+    resp = get_client().table("blog_posts") \
+        .select("*") \
+        .eq("finding_id", finding_id) \
+        .limit(1) \
+        .execute()
+    return resp.data[0] if resp.data else None
+
+
 def get_posts_to_publish() -> list:
     """Get posts ready to auto-publish (QA passed, delay expired, not on hold)."""
     now = datetime.utcnow().isoformat()
